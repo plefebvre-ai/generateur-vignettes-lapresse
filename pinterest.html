@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LABO – Générateur Pinterest</title>
-    <!-- Librairie pour l'exportation PNG avec hash de sécurité SRI -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqoxUXRlvh51lZA0VIvhARqd6ECvkBD6yXvuupGl36250CXPcNLB3NDac-20d4gzEZCHgzUI14g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Librairie locale pour l'exportation PNG -->
+    <script src="html2canvas.min.js"></script>
     
     <style>
         /* Déclaration de la vraie police Verlag Black locale */
@@ -442,6 +442,16 @@
             word-break: break-word;
             overflow-wrap: break-word;
         }
+
+        /* Faux italique pour la police Verlag Black avec espacement automatique */
+        .title-line i, #surtitre-output i {
+            font-style: normal;
+            display: inline-block;
+            transform: skewX(-14deg);
+            -webkit-transform: skewX(-14deg);
+            transform-origin: center bottom;
+            padding-right: 0.15em;
+        }
     </style>
 </head>
 <body>
@@ -462,7 +472,7 @@
             <div class="menu-items-list">
                 <div class="menu-item" id="btnGoVignettes">Vignettes</div>
                 <div class="menu-item" id="btnGoPinterest">Pinterest</div>
-                <div class="menu-item" id="btnGoPinterest">Carrousel</div>
+                <div class="menu-item" id="btnGoCarrousel">Carrousel</div>
             </div>
         </div>
     </div>
@@ -505,6 +515,10 @@
                 <label for="textInput">Titre du Pin :</label>
                 <textarea id="textInput" rows="3" placeholder="Entrez le titre Pinterest ici..."></textarea>
 
+                <div class="instruction-note">
+                    <strong>Astuce | </strong> Pour utiliser l'italique, balisez le texte de deux astérisques comme ceci : <code>*texte*</code>.
+                </div>
+
                 <label>Image de fond :</label>
                 <label for="imageUpload" class="file-upload-btn">Choisir une photo</label>
                 <input type="file" id="imageUpload" accept="image/jpeg, image/png, image/webp" style="display: none;">
@@ -524,7 +538,7 @@
             <div class="preview-container carre" id="previewContainer">
                 <div class="bottom-gradient" id="bottomGradient"></div>
                 <img id="bg-image" alt="Fond">
-                <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/2012_logo_for_La_Presse_newspaper.svg/960px-2012_logo_for_La_Presse_newspaper.svg.png" alt="Logo">
+                <img id="logo" src="images/logo.png" alt="Logo">
                 
                 <div class="text-box" id="output-container">
                     <span id="surtitre-output"></span>
@@ -554,6 +568,7 @@
     const menuOverlay = document.getElementById('menuOverlay');
     const btnGoVignettes = document.getElementById('btnGoVignettes');
     const btnGoPinterest = document.getElementById('btnGoPinterest');
+    const btnGoCarrousel = document.getElementById('btnGoCarrousel');
 
     // Déplacement 2D en pixels
     let isDragging = false;
@@ -588,14 +603,24 @@
 
     externalLinkBtn.addEventListener('click', toggleMenu);
 
-    btnGoVignettes.addEventListener('click', () => {
-        window.location.href = 'index.html';
-    });
+    if (btnGoVignettes) {
+        btnGoVignettes.addEventListener('click', () => {
+            window.location.href = 'index.html';
+        });
+    }
 
-    btnGoPinterest.addEventListener('click', () => {
-        menuOverlay.classList.remove('open');
-        externalLinkBtn.classList.remove('is-active');
-    });
+    if (btnGoPinterest) {
+        btnGoPinterest.addEventListener('click', () => {
+            menuOverlay.classList.remove('open');
+            externalLinkBtn.classList.remove('is-active');
+        });
+    }
+
+    if (btnGoCarrousel) {
+        btnGoCarrousel.addEventListener('click', () => {
+            window.location.href = 'carrousel.html';
+        });
+    }
 
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
@@ -635,13 +660,15 @@
             reader.readAsDataURL(file);
         } else {
             fileNameDisplay.textContent = '';
+            bgImage.removeAttribute('src');
+            bgImage.style.display = 'none';
             previewContainer.style.backgroundColor = '#969ca4';
         }
     });
 
     // GLISSER-DÉPOSER DE L'IMAGE
     bgImage.addEventListener('mousedown', (e) => {
-        if (bgImage.style.display === 'none' || !bgImage.src) return;
+        if (bgImage.style.display === 'none' || !bgImage.getAttribute('src')) return;
         isDragging = true;
         startX = e.clientX - currentX;
         startY = e.clientY - currentY;
@@ -670,7 +697,8 @@
         let surtitreText = surtitreInput.value.replace(/'/g, '’');
         if (surtitreText.trim() !== "") {
             surtitreOutput.style.display = "inline-block";
-            surtitreOutput.textContent = surtitreText;
+            let parsedSurtitre = surtitreText.replace(/\*(.*?)\*/g, '<i>$1</i>');
+            surtitreOutput.innerHTML = parsedSurtitre;
         } else {
             surtitreOutput.style.display = "none";
         }
@@ -692,7 +720,9 @@
 
                 const textSpan = document.createElement('span');
                 textSpan.className = 'title-text';
-                textSpan.textContent = line;
+                
+                let formattedLine = line.replace(/\*(.*?)\*/g, '<i>$1</i>');
+                textSpan.innerHTML = formattedLine;
 
                 lineSpan.appendChild(textSpan);
                 pDiv.appendChild(lineSpan);
@@ -704,18 +734,49 @@
         bottomGradient.style.display = hasText ? "block" : "none";
     }
 
-    // EXPORTATION HD AVEC ANGLES DROITS
-    downloadBtn.addEventListener('click', () => {
-        previewContainer.style.borderRadius = '0px';
+    // EXPORTATION HD ULTRA-SÉCURISÉE (AVEC DIAGNOSTIC AUTOMATIQUE)
+    downloadBtn.addEventListener('click', async () => {
+        if (typeof html2canvas === 'undefined') {
+            alert("Erreur : La librairie html2canvas.min.js est introuvable. Vérifiez sa présence dans le dossier de l'application.");
+            return;
+        }
 
-        html2canvas(previewContainer, { useCORS: true, scale: 2.2 }).then(canvas => {
+        try {
+            if (document.fonts) {
+                await document.fonts.ready;
+            }
+
+            previewContainer.style.borderRadius = '0px';
+
+            const canvas = await html2canvas(previewContainer, {
+                useCORS: true,
+                scale: 2.2,
+                logging: false,
+                ignoreElements: (element) => {
+                    if (element.id === 'bg-image' && (!element.src || element.src === '' || window.getComputedStyle(element).display === 'none')) {
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
             previewContainer.style.borderRadius = '6px';
 
+            const activeTab = document.querySelector('.tab-btn.active');
+            const formatName = activeTab ? activeTab.dataset.format : 'export';
+
             const link = document.createElement('a');
-            link.download = `pinterest-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;
+            link.download = `pinterest-lapresse-${formatName}.png`;
             link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
             link.click();
-        });
+            document.body.removeChild(link);
+
+        } catch (err) {
+            previewContainer.style.borderRadius = '6px';
+            console.error("Erreur d'exportation html2canvas :", err);
+            alert("L'exportation a échoué avec le message suivant :\n\n" + err.message);
+        }
     });
 
     surtitreInput.addEventListener('input', updateText);
