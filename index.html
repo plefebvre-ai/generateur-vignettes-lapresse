@@ -4,15 +4,22 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>LABO – Générateur de vignettes</title>
-    <!-- Librairie pour l'exportation PNG avec hash de sécurité SRI -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" integrity="sha512-BNaRQnYJYiPSqoxUXRlvh51lZA0VIvhARqd6ECvkBD6yXvuupGl36250CXPcNLB3NDac-20d4gzEZCHgzUI14g==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <!-- Librairie locale pour l'exportation PNG -->
+    <script src="html2canvas.min.js"></script>
     
     <style>
-        /* Déclaration de la vraie police Verlag Black locale */
+        /* Déclaration des polices locales */
         @font-face {
             font-family: 'Verlag-Bold';
             src: url('Verlag Black.otf') format('opentype');
             font-weight: 900;
+            font-style: normal;
+        }
+        
+        @font-face {
+            font-family: 'Sentinel-Bold';
+            src: url('Sentinel-Bold.otf') format('opentype');
+            font-weight: bold;
             font-style: normal;
         }
 
@@ -234,8 +241,51 @@
             font-weight: bold;
             color: #111;
             padding-bottom: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
             border-bottom: 2px solid #e0e0e0;
+        }
+
+        /* NOUVEAU DESIGN ÉQUILIBRÉ DU SÉLECTEUR DE STYLE */
+        .style-toggle-container {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            width: 100%;
+        }
+
+        .style-toggle-label {
+            flex: 1;
+        }
+
+        .style-toggle-label input[type="radio"] {
+            display: none;
+        }
+
+        .style-toggle-label span {
+            display: block;
+            padding: 9px 0;
+            text-align: center;
+            border-radius: 6px;
+            border: 1px solid #dcdcdc;
+            background: #ffffff;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            color: #333333;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        }
+
+        .style-toggle-label span:hover {
+            background: #f8f8f8;
+            border-color: #bbbbbb;
+        }
+
+        .style-toggle-label input[type="radio"]:checked + span {
+            background: #E1001A;
+            color: #FFFFFF;
+            border-color: #E1001A;
+            box-shadow: 0 3px 6px rgba(225, 0, 26, 0.25);
         }
 
         .controls label { 
@@ -338,6 +388,7 @@
         /* Dimensions d'aperçu */
         .preview-container.tiktok { width: 558px; height: 750px; }       
         .preview-container.appli { width: 422px; height: 750px; }        
+        .preview-container.instagram { width: 422px; height: 750px; }
         .preview-container.youtube { width: 800px; height: 450px; }      
 
         /* IMAGE DE FOND */
@@ -386,23 +437,25 @@
             height: 65px; 
             object-fit: contain; 
             z-index: 10;
-            display: block;
+            display: none;
             pointer-events: none;
         }
 
-        /* Masquer le logo sur TikTok et Appli */
-        .preview-container.tiktok #logo,
-        .preview-container.appli #logo {
-            display: none;
-        }
-
-        /* YOUTUBE LOGO : 85px x 85px */
+        /* Affichage du logo uniquement sur YouTube et Instagram */
         .preview-container.youtube #logo {
             display: block;
             top: 25px;
             right: 25px;
             width: 85px;
             height: 85px;
+        }
+
+        .preview-container.instagram #logo {
+            display: block;
+            top: 25px;
+            right: 25px;
+            width: 65px;
+            height: 65px;
         }
 
         .text-box {
@@ -420,7 +473,8 @@
             right: 47.3px;
         }
 
-        .preview-container.appli .text-box {
+        .preview-container.appli .text-box,
+        .preview-container.instagram .text-box {
             left: 39.1px;    
             bottom: 189.5px; 
             right: 39.1px;
@@ -450,7 +504,8 @@
             margin-bottom: 15px;
         }
 
-        .preview-container.appli #surtitre-output {
+        .preview-container.appli #surtitre-output,
+        .preview-container.instagram #surtitre-output {
             margin-bottom: 6px;
         }
 
@@ -474,6 +529,7 @@
             z-index: 2;
         }
 
+        /* STYLES DES TITRES (RÉGULIER PAR DÉFAUT) */
         .preview-container.tiktok .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
@@ -488,7 +544,8 @@
             -webkit-box-decoration-break: clone;
         }
 
-        .preview-container.appli .title-line {
+        .preview-container.appli .title-line,
+        .preview-container.instagram .title-line {
             font-family: 'Verlag-Bold', 'Verlag', sans-serif;
             font-weight: 900;
             font-size: 39px;            
@@ -519,26 +576,47 @@
             overflow-wrap: break-word;
         }
 
+        /* OVERRIDES MODE CHRONIQUE */
+        .preview-container.mode-chronique:not(.youtube) .title-line {
+            font-family: 'Sentinel-Bold', serif;
+        }
+
+        .preview-container.tiktok.mode-chronique .title-line {
+            color: #FFFFFF;
+            background-color: #000000;
+            padding: 14.5px 14px;
+        }
+
+        .preview-container.appli.mode-chronique .title-line,
+        .preview-container.instagram.mode-chronique .title-line {
+            color: #FFFFFF;
+            background-color: #000000;
+            padding: 5.5px 5.5px;
+        }
+
         .preview-container.youtube .cursor-l {
             display: none;
         }
 
+        /* LE CURSEUR ROUGE NE CHANGE JAMAIS DE POLICE + ESPACEMENT DEVANT */
         .cursor-l {
             color: #E1001A;
             display: inline-block;
+            font-family: 'Verlag-Bold', 'Verlag', sans-serif !important;
+            margin-left: 0.18em;
             transform: scaleX(0.8) scaleY(1.2) translateY(3px);
             transform-origin: left center;
         }
 
-/* Faux italique pour la police Verlag Black avec espacement automatique */
-.title-line i, #surtitre-output i {
-    font-style: normal;
-    display: inline-block;
-    transform: skewX(-14deg);
-    -webkit-transform: skewX(-14deg);
-    transform-origin: center bottom;
-    padding-right: 0.15em; /* Marge de sécurité automatique pour compenser l'inclinaison */
-}
+        /* Faux italique avec espacement automatique */
+        .title-line i, #surtitre-output i {
+            font-style: normal;
+            display: inline-block;
+            transform: skewX(-14deg);
+            -webkit-transform: skewX(-14deg);
+            transform-origin: center bottom;
+            padding-right: 0.15em;
+        }
     </style>
 </head>
 <body>
@@ -559,7 +637,7 @@
             <div class="menu-items-list">
                 <div class="menu-item" id="btnGoVignettes">Vignettes</div>
                 <div class="menu-item" id="btnGoPinterest">Pinterest</div>
-                <div class="menu-item" id="btnGoPinterest">Carrousel</div>
+                <div class="menu-item" id="btnGoCarrousel">Carrousel</div>
             </div>
         </div>
     </div>
@@ -570,6 +648,7 @@
         <div class="format-tabs">
             <button class="tab-btn" data-format="tiktok">TikTok</button>
             <button class="tab-btn active" data-format="appli">Appli mobile</button>
+            <button class="tab-btn" data-format="instagram" style="display: none;">Instagram</button>
             <button class="tab-btn" data-format="youtube">YouTube</button>
         </div>
 
@@ -579,6 +658,18 @@
         <div class="workspace">
             <div class="controls">
                 <h3>Paramètres</h3>
+
+                <!-- Sélecteur de style : Régulier / Chronique -->
+                <div class="style-toggle-container">
+                    <label class="style-toggle-label">
+                        <input type="radio" name="styleMode" value="regulier" checked>
+                        <span>Régulier</span>
+                    </label>
+                    <label class="style-toggle-label">
+                        <input type="radio" name="styleMode" value="chronique">
+                        <span>Chronique</span>
+                    </label>
+                </div>
                 
                 <label for="surtitreInput">Surtitre :</label>
                 <input type="text" id="surtitreInput" placeholder="Ex: En direct">
@@ -596,8 +687,6 @@
                 <div class="file-name-display" id="fileNameDisplay"></div>
 
                 <label for="zoomSlider">Zoom de l'image (<span id="zoomValueDisplay">100%</span>) :</label>
-
-                <!-- SLIDER PERMETTANT DE DÉZOOMER JUSQU'À 10% -->
                 <input type="range" id="zoomSlider" min="10" max="250" value="100" step="1">
 
                 <div class="instruction-note">
@@ -611,7 +700,7 @@
             <div class="preview-container appli" id="previewContainer">
                 <div class="youtube-gradient"></div>
                 <img id="bg-image" alt="Fond">
-                <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/2012_logo_for_La_Presse_newspaper.svg/960px-2012_logo_for_La_Presse_newspaper.svg.png" alt="Logo">
+                <img id="logo" src="images/logo.png" alt="Logo">
                 
                 <div class="text-box" id="output-container">
                     <span id="surtitre-output"></span>
@@ -634,17 +723,29 @@
     const downloadBtn = document.getElementById('downloadBtn');
     const previewContainer = document.getElementById('previewContainer');
     const tabButtons = document.querySelectorAll('.tab-btn');
+    const styleRadios = document.querySelectorAll('input[name="styleMode"]');
 
     const externalLinkBtn = document.getElementById('externalLinkBtn');
     const menuOverlay = document.getElementById('menuOverlay');
     const btnGoVignettes = document.getElementById('btnGoVignettes');
     const btnGoPinterest = document.getElementById('btnGoPinterest');
+    const btnGoCarrousel = document.getElementById('btnGoCarrousel');
 
-    // Déplacement 2D en pixels
     let isDragging = false;
     let startX = 0, startY = 0;
     let currentX = 0, currentY = 0;
     let zoomLevel = 1;
+
+    // Gestion du bascule de style (Régulier / Chronique)
+    styleRadios.forEach(radio => {
+        radio.addEventListener('change', (e) => {
+            if (e.target.value === 'chronique') {
+                previewContainer.classList.add('mode-chronique');
+            } else {
+                previewContainer.classList.remove('mode-chronique');
+            }
+        });
+    });
 
     function applyImageTransform() {
         bgImage.style.transform = `translate(-50%, -50%) translate(${currentX}px, ${currentY}px) scale(${zoomLevel})`;
@@ -657,33 +758,43 @@
 
     externalLinkBtn.addEventListener('click', toggleMenu);
 
-    btnGoVignettes.addEventListener('click', () => {
-        menuOverlay.classList.remove('open');
-        externalLinkBtn.classList.remove('is-active');
-    });
+    if (btnGoVignettes) {
+        btnGoVignettes.addEventListener('click', () => {
+            menuOverlay.classList.remove('open');
+            externalLinkBtn.classList.remove('is-active');
+        });
+    }
 
-    btnGoPinterest.addEventListener('click', () => {
-        window.location.href = 'pinterest.html';
-    });
+    if (btnGoPinterest) {
+        btnGoPinterest.addEventListener('click', () => {
+            window.location.href = 'pinterest.html';
+        });
+    }
+
+    if (btnGoCarrousel) {
+        btnGoCarrousel.addEventListener('click', () => {
+            window.location.href = 'carrousel.html';
+        });
+    }
 
     tabButtons.forEach(button => {
         button.addEventListener('click', () => {
             tabButtons.forEach(btn => btn.classList.remove('active'));
             button.classList.add('active');
 
+            const isChronique = previewContainer.classList.contains('mode-chronique');
             const format = button.getAttribute('data-format');
-            previewContainer.className = 'preview-container ' + format;
+            
+            previewContainer.className = 'preview-container ' + format + (isChronique ? ' mode-chronique' : '');
         });
     });
 
-    // GESTION DU ZOOM (Gère les valeurs de 10% à 250%)
     zoomSlider.addEventListener('input', () => {
         zoomLevel = zoomSlider.value / 100;
         zoomValueDisplay.textContent = `${zoomSlider.value}%`;
         applyImageTransform();
     });
 
-    // GESTION DE L'UPLOAD & CHANGEMENT DE COULEUR DU FOND (#f15fdb)
     imageUpload.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -704,13 +815,14 @@
             reader.readAsDataURL(file);
         } else {
             fileNameDisplay.textContent = '';
+            bgImage.removeAttribute('src');
+            bgImage.style.display = 'none';
             previewContainer.style.backgroundColor = '#969ca4';
         }
     });
 
-    // GLISSER-DÉPOSER DE L'IMAGE
     bgImage.addEventListener('mousedown', (e) => {
-        if (bgImage.style.display === 'none' || !bgImage.src) return;
+        if (bgImage.style.display === 'none' || !bgImage.getAttribute('src')) return;
         isDragging = true;
         startX = e.clientX - currentX;
         startY = e.clientY - currentY;
@@ -765,7 +877,7 @@
                 textSpan.innerHTML = formattedLine;
                 const cursorSpan = document.createElement('span');
                 cursorSpan.className = 'cursor-l';
-                cursorSpan.textContent = '\u00A0l';
+                cursorSpan.textContent = 'l';
                 textSpan.appendChild(cursorSpan);
             } else {
                 textSpan.innerHTML = formattedLine;
@@ -777,18 +889,49 @@
         });
     }
 
-    // EXPORT HD SANS DEFORMATION NI COINS ARRONDIS
-    downloadBtn.addEventListener('click', () => {
-        previewContainer.style.borderRadius = '0px';
+    // EXPORT HD ULTRA-SÉCURISÉ
+    downloadBtn.addEventListener('click', async () => {
+        if (typeof html2canvas === 'undefined') {
+            alert("Erreur : La librairie html2canvas.min.js est introuvable. Vérifiez sa présence dans le dossier de l'application.");
+            return;
+        }
 
-        html2canvas(previewContainer, { useCORS: true, scale: 2.15 }).then(canvas => {
+        try {
+            if (document.fonts) {
+                await document.fonts.ready;
+            }
+
+            previewContainer.style.borderRadius = '0px';
+
+            const canvas = await html2canvas(previewContainer, {
+                useCORS: true,
+                scale: 2.15,
+                logging: false,
+                ignoreElements: (element) => {
+                    if (element.id === 'bg-image' && (!element.src || element.src === '' || window.getComputedStyle(element).display === 'none')) {
+                        return true;
+                    }
+                    return false;
+                }
+            });
+
             previewContainer.style.borderRadius = '7px';
 
+            const activeTab = document.querySelector('.tab-btn.active');
+            const formatName = activeTab ? activeTab.dataset.format : 'export';
+
             const link = document.createElement('a');
-            link.download = `vignette-lapresse-${document.querySelector('.tab-btn.active').dataset.format}.png`;
+            link.download = `vignette-lapresse-${formatName}.png`;
             link.href = canvas.toDataURL('image/png');
+            document.body.appendChild(link);
             link.click();
-        });
+            document.body.removeChild(link);
+
+        } catch (err) {
+            previewContainer.style.borderRadius = '7px';
+            console.error("Erreur d'exportation html2canvas :", err);
+            alert("L'exportation a échoué avec le message suivant :\n\n" + err.message);
+        }
     });
 
     surtitreInput.addEventListener('input', updateText);
